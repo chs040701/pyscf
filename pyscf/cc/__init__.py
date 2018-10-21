@@ -69,6 +69,7 @@ from pyscf.cc import ccsd_lambda
 from pyscf.cc import ccsd_rdm
 from pyscf.cc import addons
 from pyscf.cc import rccsd
+from pyscf.cc import rccd
 from pyscf.cc import uccsd
 from pyscf.cc import gccsd
 
@@ -136,3 +137,24 @@ def GCCSD(mf, frozen=0, mo_coeff=None, mo_occ=None):
         raise NotImplementedError('DF-GCCSD')
     else:
         return gccsd.GCCSD(mf, frozen, mo_coeff, mo_occ)
+
+
+def RCCD(mf, frozen=0, mo_coeff=None, mo_occ=None):
+    __doc__ = rccd.RCCD.__doc__
+    import numpy
+    from pyscf import lib
+    from pyscf import scf
+
+    if isinstance(mf, scf.uhf.UHF):
+        raise RuntimeError('RCCSD cannot be used with UHF method.')
+    elif isinstance(mf, scf.rohf.ROHF):
+        lib.logger.warn(mf, 'RCCSD method does not support ROHF method. ROHF object '
+                        'is converted to UHF object and UCCSD method is called.')
+        return UCCSD(mf, frozen, mo_coeff, mo_occ)
+
+#    if isinstance(mf, newton_ah._CIAH_SOSCF) or not isinstance(mf, scf.hf.RHF):
+#        mf = scf.addons.convert_to_rhf(mf)
+
+    if hasattr(mf, 'with_df') and mf.with_df:
+        raise("NO DHF-RCCD")
+    return rccd.RCCD(mf, frozen, mo_coeff, mo_occ)
