@@ -49,35 +49,33 @@ def update_amps(cc, t1, t2, eris):
     mo_e_o = eris.mo_energy[:nocc]
     mo_e_v = eris.mo_energy[nocc:] + cc.level_shift
 
-    fov = fock[:nocc,nocc:].copy()
-    foo = fock[:nocc,:nocc].copy()
-    fvv = fock[nocc:,nocc:].copy()
+    #fov = fock[:nocc,nocc:].copy()
+    #foo = fock[:nocc,:nocc].copy()
+    #fvv = fock[nocc:,nocc:].copy()
 
-    Foo = imd.cc_Foo(t1,t2,eris)
-    Fvv = imd.cc_Fvv(t1,t2,eris)
-    Fov = imd.cc_Fov(t1,t2,eris)
-
-    # Move energy terms to the other side
-    Foo[np.diag_indices(nocc)] -= mo_e_o
-    Fvv[np.diag_indices(nvir)] -= mo_e_v
+    #Foo = imd.cc_Foo(t1,t2,eris)
+    #Fvv = imd.cc_Fvv(t1,t2,eris)
+    #Fov = imd.cc_Fov(t1,t2,eris)
+    #
+    ## Move energy terms to the other side
+    #Foo[np.diag_indices(nocc)] -= mo_e_o
+    #Fvv[np.diag_indices(nvir)] -= mo_e_v
 
     # T1 equation(shape)
-    t1new  =-2*np.einsum('kc,ka,ic->ia', fov, t1, t1)
+    t1new  =fock[:nocc,nocc:].copy()
 
 
     # T2 equation
     #eris_ovoo = np.asarray(eris.ovoo, order='C')
-    tmp2  = lib.einsum('kibc,ka->abic', eris.oovv, -t1)
-    tmp2 += eris.ovvv.conj().transpose(1,3,0,2)
-    tmp = lib.einsum('abic,jc->ijab', tmp2, t1)*0
-    t2new = tmp + tmp.transpose(1,0,3,2)
+    #tmp2  = lib.einsum('kibc,ka->abic', eris.oovv, -t1)
+    #tmp2 += eris.ovvv.conj().transpose(1,3,0,2)
+    #tmp = lib.einsum('abic,jc->ijab', tmp2, t1)*0
+    #t2new = tmp + tmp.transpose(1,0,3,2)
     #tmp2  = lib.einsum('kcai,jc->akij', eris.ovvo, t1)
     #tmp2 += eris.ovoo.transpose(1,3,0,2).conj()
     #tmp = lib.einsum('akij,kb->ijab', tmp2, t1)
     #t2new -= tmp + tmp.transpose(1,0,3,2)
     
-    t2new = eris.ovov.transpose(0,2,1,3).copy()
-    #raise("S")
     if cc.cc2:
         raise("No CC2")
     else:
@@ -86,8 +84,8 @@ def update_amps(cc, t1, t2, eris):
         #Loo[np.diag_indices(nocc)] -= mo_e_o
         #Lvv[np.diag_indices(nvir)] -= mo_e_v
 
-        Loo= 2*lib.einsum('klcd,ilcd->ki', eris.ovov.transpose(2,0,3,1), t2)-lib.einsum('kldc,ilcd->ki', eris.ovov.transpose(2,0,3,1), t2)
-        Lvv=-2*lib.einsum('klcd,klad->ac', eris.ovov.transpose(2,0,3,1), t2)+lib.einsum('kldc,klad->ac', eris.ovov.transpose(2,0,3,1), t2)
+        Loo= 2*lib.einsum('klcd,ilcd->ki', eris.ovov.transpose(2,0,3,1), t2)-lib.einsum('lkcd,ilcd->ki', eris.ovov.transpose(2,0,3,1), t2)
+        Lvv= 2*lib.einsum('kldc,klda->ac', eris.ovov.transpose(2,0,3,1), t2)-lib.einsum('kldc,lkda->ac', eris.ovov.transpose(2,0,3,1), t2)
 
         #Woooo = eris.oooo.transpose(2,0,3,1) + lib.einsum('kcld,ijcd->klij', eris.ovov, t2)
         #Wvoov = eris.ovvo.transpose(2,0,3,1) - 0.5*(lib.einsum('ldkc,ilda->akic', eris.ovov, t2) 
@@ -98,24 +96,21 @@ def update_amps(cc, t1, t2, eris):
         Woooo = eris.oooo.transpose(2,0,3,1) + lib.einsum('klcd,ijcd->klij', eris.ovov.transpose(2,0,3,1), t2)
         Wvoov = eris.ovvo.transpose(2,0,3,1) - 0.5*(lib.einsum('lkdc,ilda->akic', eris.ovov.transpose(2,0,3,1), t2) \
               + lib.einsum('lkcd,ilad->akic', eris.ovov.transpose(2,0,3,1), t2)) + lib.einsum('lkdc,ilad->akic', eris.ovov.transpose(2,0,3,1), t2)
-        Wvovo = eris.oovv.transpose(2,0,3,1) - 0.5*lib.einsum('lkcd,ilda->akci', eris.ovov.transpose(2,0,3,1), t2)
-        Wvvvv = eris.vvvv.transpose(2,0,3,1)
+        Wvoov2 = eris.oovv.transpose(2,0,1,3) - 0.5*lib.einsum('lkcd,ilda->akic', eris.ovov.transpose(2,0,3,1), t2)
+        #Wvvvv = eris.vvvv.transpose(2,0,3,1)
 
         #
         #tau = t2 + np.einsum('ia,jb->ijab', t1, t1)
+
+        t2new = -lib.einsum('ac,ijcb->ijab', Lvv, t2)-lib.einsum('ki,kjab->ijab', Loo, t2) \
+            + 2*lib.einsum('akic,kjcb->ijab', Wvoov, t2)-lib.einsum('akic,kjcb->ijab', Wvoov2, t2) \
+            - lib.einsum('akic,kjbc->ijab', Wvoov, t2)-lib.einsum('bkic,kjac->ijab', Wvoov2, t2)
+        t2new += t2new.transpose(1,0,3,2)
+        
         t2new += lib.einsum('klij,klab->ijab', Woooo, t2)
-        t2new += lib.einsum('abcd,ijcd->ijab', Wvvvv, t2)
-        tmp = lib.einsum('ac,ijcb->ijab', Lvv, t2)
-        t2new += (tmp + tmp.transpose(1,0,3,2))
-        tmp = lib.einsum('ki,kjab->ijab', Loo, t2)
-        t2new -= (tmp + tmp.transpose(1,0,3,2))
-        tmp  = 2*lib.einsum('akic,kjcb->ijab', Wvoov, t2)
-        tmp -=   lib.einsum('akci,kjcb->ijab', Wvovo, t2)
-        t2new += (tmp + tmp.transpose(1,0,3,2))
-        tmp = lib.einsum('akic,kjbc->ijab', Wvoov, t2)
-        t2new -= (tmp + tmp.transpose(1,0,3,2))
-        tmp = lib.einsum('bkci,kjac->ijab', Wvovo, t2)
-        t2new -= (tmp + tmp.transpose(1,0,3,2))
+        t2new += lib.einsum('abcd,ijcd->ijab', eris.vvvv.transpose(2,0,3,1), t2)
+     
+    t2new += eris.ovov.transpose(0,2,1,3).copy()   
 
     eia = mo_e_o[:,None] - mo_e_v
     eijab = lib.direct_sum('ia,jb->ijab',eia,eia)
@@ -134,9 +129,9 @@ def energy(cc, t1=None, t2=None, eris=None):
     nocc, nvir = t1.shape
     fock = eris.fock
     e = 2*np.einsum('ia,ia', fock[:nocc,nocc:], t1)
-    eris_ovov = np.asarray(eris.ovov)
-    e += 2*np.einsum('ijab,iajb', t2, eris_ovov)
-    e +=  -np.einsum('ijab,ibja', t2, eris_ovov)
+    #eris_ovov = np.asarray(eris.ovov)
+    e += 2*np.einsum('ijab,ijab', t2, eris.ovov.transpose(0,2,1,3))
+    e +=  -np.einsum('ijab,ijba', t2, eris.ovov.transpose(0,2,1,3))
     if abs(e.imag) > 1e-4:
         logger.warn(cc, 'Non-zero imaginary part found in RCCSD energy %s', e)
     return e.real
