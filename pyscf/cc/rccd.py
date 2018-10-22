@@ -94,17 +94,20 @@ def update_amps(cc, t1, t2, eris):
         #Wvvvv = eris.vvvv.transpose(2,0,3,1)
         
         Woooo = eris.oooo.transpose(2,0,3,1) + lib.einsum('klcd,ijcd->klij', eris.ovov.transpose(2,0,3,1), t2)
-        Wvoov = eris.ovvo.transpose(2,0,3,1) - 0.5*(lib.einsum('lkdc,ilda->akic', eris.ovov.transpose(2,0,3,1), t2) \
-              + lib.einsum('lkcd,ilad->akic', eris.ovov.transpose(2,0,3,1), t2)) + lib.einsum('lkdc,ilad->akic', eris.ovov.transpose(2,0,3,1), t2)
-        Wvoov2 = eris.oovv.transpose(2,0,1,3) - 0.5*lib.einsum('lkcd,ilda->akic', eris.ovov.transpose(2,0,3,1), t2)
+        #Wvoov = eris.ovvo.transpose(2,0,3,1) - 0.5*(lib.einsum('lkdc,ilda->akic', eris.ovov.transpose(2,0,3,1), t2) \
+        #      + lib.einsum('lkcd,ilad->akic', eris.ovov.transpose(2,0,3,1), t2)) + lib.einsum('lkdc,ilad->akic', eris.ovov.transpose(2,0,3,1), t2)
+        #Wvoov2 = eris.oovv.transpose(2,0,1,3) - 0.5*lib.einsum('lkcd,ilda->akic', eris.ovov.transpose(2,0,3,1), t2)
+        Wvoov = eris.ovvo.transpose(3,2,0,1) - 0.5*(lib.einsum('lkdc,ilda->iakc', eris.ovov.transpose(2,0,3,1), t2) \
+              + lib.einsum('lkcd,ilad->iakc', eris.ovov.transpose(2,0,3,1), t2)) + lib.einsum('lkdc,ilad->iakc', eris.ovov.transpose(2,0,3,1), t2)
+        Wvoov2 = eris.oovv.transpose(1,2,0,3) - 0.5*lib.einsum('lkcd,ilda->iakc', eris.ovov.transpose(2,0,3,1), t2)
         #Wvvvv = eris.vvvv.transpose(2,0,3,1)
 
         #
         #tau = t2 + np.einsum('ia,jb->ijab', t1, t1)
 
         t2new = -lib.einsum('ac,ijcb->ijab', Lvv, t2)-lib.einsum('ki,kjab->ijab', Loo, t2) \
-            + 2*lib.einsum('akic,kjcb->ijab', Wvoov, t2)-lib.einsum('akic,kjcb->ijab', Wvoov2, t2) \
-            - lib.einsum('akic,kjbc->ijab', Wvoov, t2)-lib.einsum('bkic,kjac->ijab', Wvoov2, t2)
+            + 2*lib.einsum('iakc,kjcb->ijab', Wvoov, t2)-lib.einsum('iakc,kjcb->ijab', Wvoov2, t2) \
+            - lib.einsum('iakc,kjbc->ijab', Wvoov, t2)-lib.einsum('ibkc,kjac->ijab', Wvoov2, t2)
         t2new += t2new.transpose(1,0,3,2)
         
         t2new += lib.einsum('klij,klab->ijab', Woooo, t2)
