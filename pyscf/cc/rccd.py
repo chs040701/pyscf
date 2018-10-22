@@ -97,9 +97,9 @@ def update_amps(cc, t1, t2, eris):
         #Wvoov = eris.ovvo.transpose(2,0,3,1) - 0.5*(lib.einsum('lkdc,ilda->akic', eris.ovov.transpose(2,0,3,1), t2) \
         #      + lib.einsum('lkcd,ilad->akic', eris.ovov.transpose(2,0,3,1), t2)) + lib.einsum('lkdc,ilad->akic', eris.ovov.transpose(2,0,3,1), t2)
         #Wvoov2 = eris.oovv.transpose(2,0,1,3) - 0.5*lib.einsum('lkcd,ilda->akic', eris.ovov.transpose(2,0,3,1), t2)
-        Wvoov = eris.ovvo.transpose(3,2,0,1) - 0.5*(lib.einsum('lkdc,ilda->iakc', eris.ovov.transpose(2,0,3,1), t2) \
-              + lib.einsum('lkcd,ilad->iakc', eris.ovov.transpose(2,0,3,1), t2)) + lib.einsum('lkdc,ilad->iakc', eris.ovov.transpose(2,0,3,1), t2)
-        Wvoov2 = eris.oovv.transpose(1,2,0,3) - 0.5*lib.einsum('lkcd,ilda->iakc', eris.ovov.transpose(2,0,3,1), t2)
+        Wvoov = eris.ovvo.transpose(3,2,0,1) - 0.5*(lib.einsum('klcd,ilda->iakc', eris.ovov.transpose(2,0,3,1), t2) \
+              + lib.einsum('kldc,ilad->iakc', eris.ovov.transpose(2,0,3,1), t2)) + lib.einsum('klcd,ilad->iakc', eris.ovov.transpose(2,0,3,1), t2)
+        Wvoov2 = eris.oovv.transpose(1,2,0,3) - 0.5*lib.einsum('kldc,ilda->iakc', eris.ovov.transpose(2,0,3,1), t2)
         #Wvvvv = eris.vvvv.transpose(2,0,3,1)
 
         #
